@@ -144,7 +144,7 @@ Box = ig.Class.extend ({
 									animSheet:_game.getAnimSheet(animSheetIndex, playerIndex),
 									updateInterval:0.125,
 									frameSequence:[0, 1, 2, 3, 4, 5, 6, 7],
-									stop: 0};
+									stop: true};
 									
 					_game.spawnEntity(BaseParticle, emitPoint.x, emitPoint.y, settings);
 				}
