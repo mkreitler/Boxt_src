@@ -175,10 +175,10 @@ PlayerAI = PlayerBase.extend ({
 		if (isolationCount === 2 * (this.testWidth + this.testHeight)) {
 			// This block has no neighbors. Give it a bonus value to
 			// encourage the AI to build combo starters.
-			resultsPerSide:top = -1;
-			resultsPerSide:left = -1;
-			resultsPerSide:bottom = -1;
-			resultsPerSide:right = -1;
+			resultsPerSide.top = -1;
+			resultsPerSide.left = -1;
+			resultsPerSide.bottom = -1;
+			resultsPerSide.right = -1;
 		}
 		
 		return resultsPerSide;
@@ -283,7 +283,7 @@ PlayerAI = PlayerBase.extend ({
 						 blockingResults.bottom +
 						 blockingResults.left;
 			
-		if (blockScore === -5) {
+		if (blockScore === -4) {
 			// This block is isolated.
 			blockScore = this._isolationBonus;
 		}
