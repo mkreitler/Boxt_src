@@ -39,6 +39,7 @@ PlayerAI = PlayerBase.extend ({
 	testsThisFrame: 0,
 	ignoreCombos:	0,
 	ignoreBlocks:	0,
+	opponentGoal:	0,
 	
 	selectBox:		null,
 	boxManager:		null,
@@ -82,7 +83,7 @@ PlayerAI = PlayerBase.extend ({
 		var isolationBonus = 0;
 		var isolationCount = 0;
 		
-		var resultsPerSide = {top:0, left:0, bottom:0, right:0};
+		var resultsPerSide = {top:0, left:0, bottom:0, right:0, timelyBlock:0};
 		
 		// Top.
 		iRow = this.testRow - 1;
@@ -94,10 +95,12 @@ PlayerAI = PlayerBase.extend ({
 				// edge. If so, award points for blocking it.
 				if (gridID > 0 && gridID != blockID) {
 					
-					if (this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.BOTTOM)) {
+					var edgeResult = this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.BOTTOM);
+					if (edgeResult.isOpenEdge) {
 						blockID = gridID;
 						blockScore += this._pointsPerBlock;
 						resultsPerSide.top += 1;
+						resultsPerSide.timelyBlock += edgeResult.timelyBlock;
 					}
 				}
 				else if (gridID === 0) {
@@ -116,10 +119,12 @@ PlayerAI = PlayerBase.extend ({
 				// edge. If so, award points for blocking it.
 				if (gridID > 0 && gridID != blockID) {
 					
-					if (this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.LEFT)) {
+					var edgeResult = this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.LEFT)
+					if (edgeResult.isOpenEdge) {
 						blockID = gridID;
 						blockScore += this._pointsPerBlock;
 						resultsPerSide.right += 1;
+						resultsPerSide.timelyBlock += edgeResult.timelyBlock;
 					}
 				}
 				else if (gridID === 0) {
@@ -138,10 +143,12 @@ PlayerAI = PlayerBase.extend ({
 				// edge. If so, award points for blocking it.
 				if (gridID > 0 && gridID != blockID) {
 				
-					if (this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.TOP)) {
+					var edgeResult = this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.TOP);
+					if (edgeResult.isOpenEdge) {
 						blockID = gridID;
 						blockScore += this._pointsPerBlock;
 						resultsPerSide.bottom += 1;
+						resultsPerSide.timelyBlock += edgeResult.timelyBlock;
 					}
 				}
 				else if (gridID === 0) {
@@ -160,10 +167,12 @@ PlayerAI = PlayerBase.extend ({
 				// edge. If so, award points for blocking it.
 				if (gridID > 0 && gridID != blockID) {
 					
-					if (this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.RIGHT)) {
+					var edgeResult = this.isOpenEdge(this.boxManager.getBoxWithID(gridID), Box.EDGE.RIGHT);
+					if (edgeResult.isOpenEdge) {
 						blockID = gridID;
 						blockScore += this._pointsPerBlock;
 						resultsPerSide.left += 1;
+						resultsPerSide.timelyBlock += edgeResult.timelyBlock;
 					}
 				}
 				else if (gridID === 0) {
@@ -185,9 +194,9 @@ PlayerAI = PlayerBase.extend ({
 	},
 	
 	isOpenEdge: function(box, whichEdge) {
-		var isOpenEdge = false;
 		var maxRows = _game.getGameRows();
 		var maxCols = _game.getGameColumns();
+		var edgeResult = {isOpenEdge:0, timelyBlock:0};
 		
 		if (box) {
 			switch(whichEdge) {
@@ -200,7 +209,10 @@ PlayerAI = PlayerBase.extend ({
 						}
 					}
 					
-					isOpenEdge = openCount === box.size.width;
+					edgeResult.isOpenEdge = openCount === box.size.width;
+					if (edgeResult.isOpenEdge) {
+						edgeResult.timelyBlock = this.isFactorOf(box.size.width, this.opponentGoal);
+					}
 				break;
 			
 				case Box.EDGE.RIGHT:
@@ -212,7 +224,10 @@ PlayerAI = PlayerBase.extend ({
 						}
 					}
 					
-					isOpenEdge = openCount === box.size.height;
+					edgeResult.isOpenEdge = openCount === box.size.height;
+					if (edgeResult.isOpenEdge) {
+						edgeResult.timelyBlock = this.isFactorOf(box.size.height, this.opponentGoal);
+					}
 				break;
 			
 				case Box.EDGE.BOTTOM:
@@ -224,7 +239,10 @@ PlayerAI = PlayerBase.extend ({
 						}
 					}
 					
-					isOpenEdge = openCount === box.size.width;
+					edgeResult.isOpenEdge = openCount === box.size.width;
+					if (edgeResult.isOpenEdge) {
+						edgeResult.timelyBlock = this.isFactorOf(box.size.width, this.opponentGoal);
+					}
 				break;
 			
 				case Box.EDGE.LEFT:
@@ -236,12 +254,20 @@ PlayerAI = PlayerBase.extend ({
 						}
 					}
 					
-					isOpenEdge = openCount === box.size.height;
+					edgeResult.isOpenEdge = openCount === box.size.height;
+					if (edgeResult.isOpenEdge) {
+						edgeResult.timelyBlock = this.isFactorOf(box.size.height, this.opponentGoal);
+					}
 				break;
 			}
 		}
 		
-		return isOpenEdge;
+		return edgeResult;
+	},
+	
+	// Check to see if the given length is an even divisor of the given area.
+	isFactorOf: function(length, area) {
+		return area > 0 ? (area / length) === parseInt(area / length) : false;
 	},
 	
 	scoreCurrentTest: function() {
@@ -278,10 +304,15 @@ PlayerAI = PlayerBase.extend ({
 		if (blockingResults.right > 0) blockBonus += 1;
 		blockBonus = Math.max(blockBonus - 1, 0);
 		
+		if (!this.ignoreCombos && !this.ignoreBlocks) {
+			blockBonus += blockingResults.timelyBlock;
+		}
+		
 		var blockScore = blockingResults.top +
 						 blockingResults.right +
 						 blockingResults.bottom +
-						 blockingResults.left;
+						 blockingResults.left +
+						 blockingResults.timelyBlock;
 						 
 		if (blockScore === -4) {
 			// This block is isolated.
@@ -531,7 +562,7 @@ PlayerAI = PlayerBase.extend ({
 		}
 	},
 	
-	startTurn: function(selectBox, boxManager, boxID) {
+	startTurn: function(selectBox, boxManager, boxID, opponentGoal) {
 		if (selectBox && boxManager) {
 			// Borrow the level's selection box.
 			this.selectBox = selectBox;
@@ -551,6 +582,8 @@ PlayerAI = PlayerBase.extend ({
 			this.bestScore = -1;
 			this.bestCombo = 0;
 			this.bestBlock = 0;
+			
+			this.opponentGoal = opponentGoal;
 			
 			this.startNewTest();
 			

@@ -68,7 +68,7 @@ PlayingState = GameState.extend ({
 		this.infoLabel.changeImage(_game.getLabelImage(Boxt.LABELS.THINKING));
 		
 		if (player && this.selectBox && this.boxManager) {
-			player.startTurn(this.selectBox, this.boxManager, this.boxID);
+			player.startTurn(this.selectBox, this.boxManager, this.boxID, this.players[0].getGoal());
 			this.stateUpdate = this.AIthinkUpdate;
 		}
 		else {
