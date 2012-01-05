@@ -9,11 +9,11 @@ ig.module(
 	'game.boxt_main' 
 )
 .requires(
-	'impact.gfx_extensions',
 	'impact.game',
 	'impact.font',
 	'impact.timer',
 	
+	'game.graphics.gfx_extensions',
 	'game.box_manager',
 	'game.box',
 	'game.game_states.title_state',
@@ -233,7 +233,11 @@ Boxt = ig.Game.extend({
 			_uiManager.updateWidgets();
 		}
 		
-		if( ig.input.pressed('diagnostics_toggle') ) {
+		if( ig.input.pressed('diagnostics_toggle') ||
+	        (ig.ua.mobile && ig.input.pressed('mouseLeft') && ig.input.mouse.x > _gameWidth - 20 && ig.input.mouse.y > _gameHeight - 20)) {
+            // set the starting point
+            this.mouseStart.x = this.clampMouseX(ig.input.mouse.x);
+            this.mouseStart.y = ig.input.mouse.y;
 			Boxt._diagnosticsOn = !Boxt._diagnosticsOn;
 		}
 	},

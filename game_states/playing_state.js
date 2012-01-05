@@ -38,6 +38,9 @@ PlayingState = GameState.extend ({
 	clickWait:		0,
 	holdTimer:		0,
 	
+	debugIndex:		0,
+	debugBase:		0,
+	
 	_goalLookahead:			5,
 	_goalVertOffsetFactor:	2.7,
 	_pi:					3.14159265359,
@@ -102,6 +105,10 @@ PlayingState = GameState.extend ({
 
 		// Advance the current player to its next turn.		
 		player.nextTurn();
+		
+		if (player === this.players[0]) {
+			++this.debugBase;
+		}
 
 		// Flip players.
 		this.playerIndex = (++this.playerIndex) % 2;
@@ -472,17 +479,19 @@ PlayingState = GameState.extend ({
 		x3 = ig.system.getDrawPos(x3 + ig.game.screen.x);
 		y3 = ig.system.getDrawPos(y3 + ig.game.screen.y);
 		
-		var dashGapArray = [8, 5];
-		ig.system.context.lineWidth = 1.5;
-		
-		ig.system.context.strokeStyle = 'rgb(255,0,0)';
-		ig.system.context.beginPath();
-		ig.system.context.dashedLine(x0, y0, x1, y1, dashGapArray, 0);
-		ig.system.context.dashedLine(x1, y1, x2, y2, dashGapArray, 0);
-		ig.system.context.dashedLine(x2, y2, x3, y3, dashGapArray, 0);
-		ig.system.context.dashedLine(x3, y3, x0, y0, dashGapArray, 0);
-		ig.system.context.closePath();
-		ig.system.context.stroke();
+		if (this.stateUpdate != this.updateWaitForPlayerAccept) {
+			var dashGapArray = [8, 5];
+			ig.system.context.lineWidth = 1.5;
+			
+			ig.system.context.strokeStyle = 'rgb(255,0,0)';
+			ig.system.context.beginPath();
+			ig.system.context.dashedLine(x0, y0, x1, y1, dashGapArray, 0);
+			ig.system.context.dashedLine(x1, y1, x2, y2, dashGapArray, 0);
+			ig.system.context.dashedLine(x2, y2, x3, y3, dashGapArray, 0);
+			ig.system.context.dashedLine(x3, y3, x0, y0, dashGapArray, 0);
+			ig.system.context.closePath();
+			ig.system.context.stroke();
+		}
 		
 		// Draw the side length numbers, making sure they
 		// are always outside the shape.
@@ -520,6 +529,11 @@ PlayingState = GameState.extend ({
 	},
 	
 	drawGoal: function(goals, x, y) {
+		
+		if (this.debugIndex < this.players[0].pieceOrder.length && goals[0] != this.players[0].pieceOrder[this.debugIndex]) {
+			_game.numberFont.draw(goals[0], ig.system.getDrawPos(x), ig.system.getDrawPos(y), ig.Font.ALIGN.CENTER);
+		}
+		
 		if (goals[0] >= 0) {
 			_game.numberFont.draw(goals[0], ig.system.getDrawPos(x), ig.system.getDrawPos(y), ig.Font.ALIGN.CENTER);
 		}
@@ -536,10 +550,13 @@ PlayingState = GameState.extend ({
 		var y = this.goalOffset[1];
 		var goals = [this.players[0].getGoal(), this.players[1].getGoal()];
 
+		this.debugIndex = this.debugBase;
+
 		this.drawGoal(goals, x, y);
 
 		y += this.nextGoalOffset[1] - this.goalOffset[1];
-		for (var i=0; i<this._goalLookahead; ++i) {		
+		for (var i=0; i<this._goalLookahead; ++i) {
+			++this.debugIndex;
 			x = this.nextGoalOffset[0];
 			goals = [this.players[0].getOffsetGoal(i + 1), this.players[1].getOffsetGoal(i + 1)];
 			this.drawGoal(goals, x, y);
@@ -564,6 +581,9 @@ PlayingState = GameState.extend ({
 			this.drawGhostGems();
 			this.drawSelectionInfo();
 		}
+		else if (this.stateUpdate === this.updateWaitForPlayerAccept) {
+			this.drawSelectionInfo();
+		}
 		
 		// HACK: update the clickWait timer here so we don't have to
 		// trickle it into the various update methods.
@@ -586,6 +606,8 @@ PlayingState = GameState.extend ({
 		
 		this.clickWait = 0;
 		
+		this.debugBase = 0;
+		
 		if (_game.getMode() === Boxt.MODE.SINGLE_PLAYER) {
 			playerTwo = new PlayerAI(_game.playerTwoImages);
 		}
@@ -606,6 +628,7 @@ PlayingState = GameState.extend ({
 	stateExit: function() {
 		_game._uiManager.removeWidget(this.infoLabel);
 		_game.removeEntity(this.infoLabel);
+
 		_game.removeEntity(this.players[0]);
 		_game.removeEntity(this.players[1]);
 		

@@ -282,10 +282,14 @@ PlayerAI = PlayerBase.extend ({
 						 blockingResults.right +
 						 blockingResults.bottom +
 						 blockingResults.left;
-			
+						 
 		if (blockScore === -4) {
 			// This block is isolated.
 			blockScore = this._isolationBonus;
+		}
+		else if (blockScore > 0) {
+			// Any block at all is better than isolation.
+			blockScore += this._isolationBonus;
 		}
 		
 		if (this.ignoreCombos) {
@@ -303,7 +307,7 @@ PlayerAI = PlayerBase.extend ({
 		if (totalScore > this.bestScore + this.bestCombo) {
 			acceptMove = true;
 		}
-		else if (totalScore === this.bestScore + this.bestCombo) {
+		else if (totalScore === this.bestScore + this.bestCombo && testValue.score > 0) {
 			// Check for acceptance of a move that's as good as our current best move.
 			// Since we iterate from upper left to lower right, we need a system to
 			// prevent the AI from clustering moves in a single region.
